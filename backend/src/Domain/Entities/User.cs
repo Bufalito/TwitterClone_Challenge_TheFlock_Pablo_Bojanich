@@ -21,6 +21,12 @@ public class User
 
     public string DisplayName { get; private set; } = string.Empty;
 
+    public string PasswordHash { get; internal set; } = string.Empty;
+
+    public string? Bio { get; internal set; }
+
+    public string? Avatar { get; internal set; }
+
     public DateTime CreatedAtUtc { get; private set; } = DateTime.UtcNow;
 
     public ICollection<Tweet> Tweets { get; } = new List<Tweet>();
