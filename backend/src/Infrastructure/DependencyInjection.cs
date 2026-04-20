@@ -14,6 +14,9 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
+        // Register DbContext as the abstract DbContext type for Application layer
+        services.AddScoped<DbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+
         return services;
     }
 }

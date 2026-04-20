@@ -30,6 +30,19 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(100)
             .IsRequired();
 
+        builder.Property(user => user.PasswordHash)
+            .HasColumnName("password_hash")
+            .HasMaxLength(256)
+            .IsRequired();
+
+        builder.Property(user => user.Bio)
+            .HasColumnName("bio")
+            .HasMaxLength(500);
+
+        builder.Property(user => user.Avatar)
+            .HasColumnName("avatar")
+            .HasMaxLength(2048);
+
         builder.Property(user => user.CreatedAtUtc)
             .HasColumnName("created_at_utc")
             .IsRequired();

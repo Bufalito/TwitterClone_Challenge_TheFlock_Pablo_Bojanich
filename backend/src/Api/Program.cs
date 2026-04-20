@@ -1,8 +1,17 @@
+using Application;
 using Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+
+// Only add Infrastructure if not in Testing environment
+if (builder.Environment.EnvironmentName != "Testing")
+{
+    builder.Services.AddInfrastructure(builder.Configuration);
+}
+
+builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
 {
@@ -17,6 +26,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+
+app.MapControllers();
 
 app.MapGet("/api/health", (Infrastructure.Persistence.ApplicationDbContext db) =>
 {
@@ -34,3 +45,6 @@ app.MapGet("/api/health", (Infrastructure.Persistence.ApplicationDbContext db) =
 });
 
 app.Run();
+
+// Make Program accessible to tests
+public partial class Program { }
