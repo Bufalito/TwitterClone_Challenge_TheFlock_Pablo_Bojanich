@@ -1,7 +1,10 @@
 using Application.DTOs;
 using Application.Interfaces;
+using Dapper;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Data;
 
 namespace Application.Services;
 
@@ -139,5 +142,37 @@ public sealed class TweetService : ITweetService
 
         _context.Set<Like>().Remove(like);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<List<TweetResponse>> GetTimelineAsync(Guid userId, int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        var offset = (page - 1) * pageSize;
+
+        // Get user's followed IDs
+        var followedIds = await _context.Set<Follow>()
+            .Where(f => f.FollowerId == userId)
+            .Select(f => f.FollowedId)
+            .ToListAsync(cancellationToken);
+
+        // Get timeline tweets (user's own tweets + followed users' tweets)
+        var tweets = await _context.Set<Tweet>()
+            .Include(t => t.User)
+            .Where(t => t.UserId == userId || followedIds.Contains(t.UserId))
+            .OrderByDescending(t => t.CreatedAtUtc)
+            .Skip(offset)
+            .Take(pageSize)
+            .Select(t => new TweetResponse(
+                t.Id,
+                t.UserId,
+                t.Content,
+                t.CreatedAtUtc,
+                t.User.Username,
+                t.User.DisplayName,
+                _context.Set<Like>().Count(l => l.TweetId == t.Id),
+                _context.Set<Like>().Any(l => l.TweetId == t.Id && l.UserId == userId)
+            ))
+            .ToListAsync(cancellationToken);
+
+        return tweets;
     }
 }

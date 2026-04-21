@@ -167,6 +167,13 @@ export const api = {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       }),
 
+    getTimeline: (token: string, page: number = 1, pageSize: number = 20) =>
+      fetchApi<TweetResponse[]>(`/api/tweets/timeline?page=${page}&pageSize=${pageSize}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+
     like: (token: string, tweetId: string) =>
       fetchApi<{ message: string }>(`/api/tweets/${tweetId}/like`, {
         method: 'POST',
