@@ -23,7 +23,7 @@ export default function RightSidebar() {
         setTrendingHashtags(hashtags);
 
         // Load suggested users
-        const users = await api.user.getSuggestions(3, token);
+        const users = await api.user.getSuggestions(3, token ?? undefined);
         setSuggestedUsers(users);
       } catch (err) {
         console.error('Error loading sidebar data:', err);
@@ -152,7 +152,7 @@ export default function RightSidebar() {
               className="flex items-center justify-between p-4 hover:bg-gray-700 transition"
             >
               <Link href={`/user/${user.username}`} className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white font-bold flex-shrink-0">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white font-bold shrink-0">
                   {user.displayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -165,7 +165,7 @@ export default function RightSidebar() {
                   e.preventDefault();
                   handleFollow(user.id);
                 }}
-                className="rounded-full bg-white px-4 py-1.5 font-bold text-black text-sm transition hover:bg-gray-200 flex-shrink-0"
+                className="rounded-full bg-white px-4 py-1.5 font-bold text-black text-sm transition hover:bg-gray-200 shrink-0"
               >
                 Seguir
               </button>
