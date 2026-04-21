@@ -8,10 +8,11 @@ public class Tweet
     {
     }
 
-    public Tweet(Guid userId, string content)
+    public Tweet(Guid userId, string content, Guid? parentTweetId = null)
     {
         UserId = userId;
         Content = ValidateContent(content);
+        ParentTweetId = parentTweetId;
     }
 
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -22,9 +23,15 @@ public class Tweet
 
     public DateTime CreatedAtUtc { get; private set; } = DateTime.UtcNow;
 
+    public Guid? ParentTweetId { get; private set; }
+
     public User User { get; private set; } = null!;
 
+    public Tweet? ParentTweet { get; private set; }
+
     public ICollection<Like> Likes { get; } = new List<Like>();
+
+    public ICollection<Tweet> Replies { get; } = new List<Tweet>();
 
     private static string ValidateContent(string content)
     {

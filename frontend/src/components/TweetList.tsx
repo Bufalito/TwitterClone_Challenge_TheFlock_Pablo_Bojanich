@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { TweetResponse } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
@@ -12,6 +13,7 @@ interface TweetListProps {
 }
 
 export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
+  const router = useRouter();
   const { token, user } = useAuthStore();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [likingId, setLikingId] = useState<string | null>(null);
@@ -128,12 +130,14 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
         <div
           key={tweet.id}
           className="border-b border-gray-800 p-4 hover:bg-gray-800/50 transition-colors cursor-pointer"
+          onClick={() => router.push(`/tweet/${tweet.id}`)}
         >
           <div className="flex gap-3">
             {/* Avatar */}
             <Link
               href={`/user/${tweet.username}`}
-              className="flex-shrink-0"
+              className="shrink-0"
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold hover:opacity-80 transition-opacity">
                 {tweet.displayName.charAt(0).toUpperCase()}
@@ -147,17 +151,19 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
                 <Link
                   href={`/user/${tweet.username}`}
                   className="font-bold text-white hover:underline truncate"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {tweet.displayName}
                 </Link>
                 <Link
                   href={`/user/${tweet.username}`}
                   className="text-gray-500 hover:underline truncate"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   @{tweet.username}
                 </Link>
                 <span className="text-gray-500">·</span>
-                <span className="text-gray-500 text-sm flex-shrink-0">
+                <span className="text-gray-500 text-sm shrink-0">
                   {formatDate(tweet.createdAtUtc)}
                 </span>
 
@@ -178,12 +184,28 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
               </div>
 
               {/* Tweet Content */}
-              <p className="text-white text-base whitespace-pre-wrap break-words mb-3">
+              <p className="text-white text-base whitespace-pre-wrap wrap-break-word mb-3">
                 {tweet.content}
               </p>
 
               {/* Actions */}
-              <div className="flex items-center gap-12 text-gray-500">
+              <div className="flex items-center gap-8 text-gray-500">
+                {/* Reply */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/tweet/${tweet.id}`);
+                  }}
+                  className="flex items-center gap-2 group hover:text-blue-400 transition-colors"
+                  aria-label="Reply to tweet"
+                >
+                  <span className="text-xl group-hover:bg-blue-400/10 rounded-full p-1.5 transition">
+                    💬
+                  </span>
+                  <span className="text-sm">{tweet.repliesCount ?? 0}</span>
+                </button>
+
+                {/* Like */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

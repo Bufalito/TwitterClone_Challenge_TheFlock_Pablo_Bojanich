@@ -265,4 +265,48 @@ public class TweetsController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred." });
         }
     }
+
+    [HttpGet("{id}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        try
+        {
+            Guid? currentUserId = null;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
+                currentUserId = userId;
+
+            var tweet = await _tweetService.GetByIdAsync(id, currentUserId);
+            if (tweet == null) return NotFound(new { error = "Tweet not found." });
+
+            return Ok(tweet);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving tweet {TweetId}", id);
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet("{id}/replies")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetReplies(Guid id)
+    {
+        try
+        {
+            Guid? currentUserId = null;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
+                currentUserId = userId;
+
+            var replies = await _tweetService.GetRepliesAsync(id, currentUserId);
+            return Ok(replies);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving replies for tweet {TweetId}", id);
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
 }

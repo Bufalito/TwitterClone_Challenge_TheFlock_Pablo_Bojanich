@@ -53,10 +53,13 @@ export interface TweetResponse {
   displayName: string;
   likesCount: number;
   isLikedByCurrentUser: boolean;
+  parentTweetId?: string | null;
+  repliesCount: number;
 }
 
 export interface CreateTweetRequest {
   content: string;
+  parentTweetId?: string;
 }
 
 export interface TrendingHashtag {
@@ -205,6 +208,16 @@ export const api = {
 
     getLiked: (userId: string, token?: string) =>
       fetchApi<TweetResponse[]>(`/api/tweets/liked/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
+
+    getById: (id: string, token?: string) =>
+      fetchApi<TweetResponse>(`/api/tweets/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
+
+    getReplies: (id: string, token?: string) =>
+      fetchApi<TweetResponse[]>(`/api/tweets/${id}/replies`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       }),
   },
