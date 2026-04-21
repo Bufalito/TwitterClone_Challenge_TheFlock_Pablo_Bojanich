@@ -134,6 +134,39 @@ public class TweetsController : ControllerBase
         }
     }
 
+    [HttpGet("timeline")]
+    [Authorize]
+    public async Task<IActionResult> GetTimeline([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        try
+        {
+            if (page < 1)
+            {
+                return BadRequest(new { error = "Page must be greater than 0." });
+            }
+
+            if (pageSize < 1 || pageSize > 50)
+            {
+                return BadRequest(new { error = "Page size must be between 1 and 50." });
+            }
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+            {
+                return Unauthorized(new { error = "User not authenticated." });
+            }
+
+            var tweets = await _tweetService.GetTimelineAsync(userGuid, page, pageSize);
+            return Ok(tweets);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving timeline for user");
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
+
     [HttpPost("{id}/like")]
     [Authorize]
     public async Task<IActionResult> Like(Guid id)
