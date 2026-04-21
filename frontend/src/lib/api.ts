@@ -28,7 +28,19 @@ export interface UserProfile {
   displayName: string;
   bio?: string;
   avatar?: string;
+  followersCount?: number;
+  followingCount?: number;
+  tweetsCount?: number;
   createdAtUtc: string;
+}
+
+export interface UserSearchResult {
+  id: string;
+  username: string;
+  displayName: string;
+  bio?: string;
+  avatar?: string;
+  followersCount: number;
 }
 
 class ApiError extends Error {
@@ -85,6 +97,12 @@ export const api = {
           Authorization: `Bearer ${token}`,
         },
       }),
+
+    getByUsername: (username: string) =>
+      fetchApi<UserProfile>(`/api/user/${username}`),
+
+    search: (query: string) =>
+      fetchApi<UserSearchResult[]>(`/api/user/search?q=${encodeURIComponent(query)}`),
   },
 };
 
