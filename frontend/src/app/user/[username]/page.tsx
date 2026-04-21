@@ -17,13 +17,14 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [tweetsLoading, setTweetsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.user.getByUsername(username);
+        const data = await api.user.getByUsername(username, token || undefined);
         setProfile(data);
       } catch (err: any) {
         setError(err.message || 'Failed to load profile');
@@ -49,6 +50,34 @@ export default function UserProfilePage() {
       fetchTweets();
     }
   }, [username, token]);
+
+  const handleFollowToggle = async () => {
+    if (!token || !profile) return;
+
+    try {
+      setFollowLoading(true);
+      
+      if (profile.isFollowedByCurrentUser) {
+        await api.user.unfollow(token, profile.id);
+        setProfile({
+          ...profile,
+          isFollowedByCurrentUser: false,
+          followersCount: (profile.followersCount || 0) - 1,
+        });
+      } else {
+        await api.user.follow(token, profile.id);
+        setProfile({
+          ...profile,
+          isFollowedByCurrentUser: true,
+          followersCount: (profile.followersCount || 0) + 1,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to follow/unfollow:', err);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const handleTweetDeleted = (tweetId: string) => {
     setTweets(tweets.filter((t) => t.id !== tweetId));
@@ -106,6 +135,23 @@ export default function UserProfilePage() {
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">{profile.displayName}</h1>
               <p className="text-gray-400 text-lg mb-4">@{profile.username}</p>
+              
+              {/* Follow Button */}
+              {token && (
+                <div className="mb-4">
+                  <button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+                      profile.isFollowedByCurrentUser
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {followLoading ? 'Loading...' : profile.isFollowedByCurrentUser ? 'Following' : 'Follow'}
+                  </button>
+                </div>
+              )}
               
               {/* Stats */}
               <div className="flex gap-6 justify-center sm:justify-start text-sm">
