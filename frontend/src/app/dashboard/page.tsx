@@ -1,12 +1,45 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import TweetComposer from '@/components/TweetComposer';
+import TweetList from '@/components/TweetList';
+import { api, TweetResponse } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [tweets, setTweets] = useState<TweetResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTweets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.tweets.getRecent(50);
+      setTweets(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tweets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTweets();
+  }, []);
+
+  const handleTweetCreated = (newTweet: TweetResponse) => {
+    setTweets([newTweet, ...tweets]);
+  };
+
+  const handleTweetDeleted = (tweetId: string) => {
+    setTweets(tweets.filter((t) => t.id !== tweetId));
+  };
 
   const handleLogout = () => {
     logout();
@@ -15,48 +48,58 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-black text-white">
-        <nav className="border-b border-zinc-800 bg-zinc-900">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-900 text-white">
+        <nav className="border-b border-gray-800 bg-gray-950 sticky top-0 z-10">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <div className="flex h-16 items-center justify-between">
-              <h1 className="text-xl font-bold">🐦 TwitterClone</h1>
-              <button
-                onClick={handleLogout}
-                className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium transition hover:bg-zinc-700"
-              >
-                Logout
-              </button>
+              <Link href="/dashboard" className="text-xl font-bold hover:text-blue-400 transition-colors">
+                🐦 TwitterClone
+              </Link>
+              <div className="flex items-center gap-4">
+                <Link
+                  href={`/user/${user?.username}`}
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  @{user?.username}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium transition hover:bg-gray-700"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </nav>
 
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
-            <h2 className="mb-4 text-2xl font-bold">Welcome, {user?.displayName}!</h2>
-            
-            <div className="space-y-3 text-zinc-300">
-              <p>
-                <span className="font-semibold text-white">Username:</span> @{user?.username}
-              </p>
-              <p>
-                <span className="font-semibold text-white">Email:</span> {user?.email}
-              </p>
-              {user?.bio && (
-                <p>
-                  <span className="font-semibold text-white">Bio:</span> {user.bio}
-                </p>
-              )}
-              <p className="text-sm text-zinc-500">
-                Member since {user?.createdAtUtc ? new Date(user.createdAtUtc).toLocaleDateString() : 'N/A'}
-              </p>
-            </div>
+        <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+          {/* Tweet Composer */}
+          <TweetComposer onTweetCreated={handleTweetCreated} />
 
-            <div className="mt-6 rounded-lg bg-zinc-800 p-4">
-              <p className="text-sm text-zinc-400">
-                🚧 More features coming soon! This is a protected route that requires authentication.
-              </p>
-            </div>
+          {/* Feed Header */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">Recent Tweets</h2>
           </div>
+
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Tweet List */}
+          {!loading && !error && (
+            <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
+          )}
         </main>
       </div>
     </ProtectedRoute>
