@@ -1,5 +1,8 @@
 using Application;
 using Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,31 @@ if (builder.Environment.EnvironmentName != "Testing")
 {
     builder.Services.AddInfrastructure(builder.Configuration);
 }
+
+// Configure JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+    };
+});
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 
@@ -26,6 +54,9 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

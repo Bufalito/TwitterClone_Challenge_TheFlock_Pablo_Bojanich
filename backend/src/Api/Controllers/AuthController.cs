@@ -9,11 +9,13 @@ namespace Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthService _authService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IUserService userService, ILogger<AuthController> logger)
+    public AuthController(IUserService userService, IAuthService authService, ILogger<AuthController> logger)
     {
         _userService = userService;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -34,6 +36,27 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Unexpected error during registration");
             return StatusCode(500, new { error = "An unexpected error occurred during registration." });
+        }
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        try
+        {
+            var response = await _authService.LoginAsync(request);
+            
+            if (response == null)
+            {
+                return Unauthorized(new { error = "Invalid username or password." });
+            }
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during login");
+            return StatusCode(500, new { error = "An unexpected error occurred during login." });
         }
     }
 }
