@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
@@ -9,7 +9,7 @@ import LeftSidebar from '@/components/LeftSidebar';
 import RightSidebar from '@/components/RightSidebar';
 import { api, UserSearchResult } from '@/lib/api';
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
@@ -114,7 +114,7 @@ export default function SearchPage() {
                         href={`/user/${user.username}`}
                         className="flex items-center gap-4 p-4 border-b border-gray-800 hover:bg-gray-800/50 transition"
                       >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white font-bold flex-shrink-0">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white font-bold shrink-0">
                           {user.displayName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -168,5 +168,13 @@ export default function SearchPage() {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense>
+      <SearchContent />
+    </Suspense>
   );
 }
