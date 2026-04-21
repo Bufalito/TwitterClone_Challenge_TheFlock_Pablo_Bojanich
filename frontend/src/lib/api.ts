@@ -43,6 +43,20 @@ export interface UserSearchResult {
   followersCount: number;
 }
 
+export interface TweetResponse {
+  id: string;
+  userId: string;
+  content: string;
+  createdAtUtc: string;
+  username: string;
+  displayName: string;
+  likesCount: number;
+}
+
+export interface CreateTweetRequest {
+  content: string;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -103,6 +117,31 @@ export const api = {
 
     search: (query: string) =>
       fetchApi<UserSearchResult[]>(`/api/user/search?q=${encodeURIComponent(query)}`),
+  },
+
+  tweets: {
+    create: (token: string, data: CreateTweetRequest) =>
+      fetchApi<TweetResponse>('/api/tweets', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      }),
+
+    delete: (token: string, tweetId: string) =>
+      fetchApi<void>(`/api/tweets/${tweetId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+
+    getRecent: (count: number = 20) =>
+      fetchApi<TweetResponse[]>(`/api/tweets?count=${count}`),
+
+    getByUser: (username: string) =>
+      fetchApi<TweetResponse[]>(`/api/tweets/user/${username}`),
   },
 };
 
