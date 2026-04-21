@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import TweetComposer from '@/components/TweetComposer';
 import TweetList from '@/components/TweetList';
+import LeftSidebar from '@/components/LeftSidebar';
+import RightSidebar from '@/components/RightSidebar';
 import { api, TweetResponse } from '@/lib/api';
 
 export default function DashboardPage() {
@@ -93,75 +94,115 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-900 text-white">
-        <nav className="border-b border-gray-800 bg-gray-950 sticky top-0 z-10">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6">
-            <div className="flex h-16 items-center justify-between">
-              <Link href="/dashboard" className="text-xl font-bold hover:text-blue-400 transition-colors">
-                🐦 TwitterClone
-              </Link>
-              <div className="flex items-center gap-4">
-                <Link
-                  href={`/user/${user?.username}`}
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  @{user?.username}
-                </Link>
+        {/* Twitter-like 3-column layout */}
+        <div className="container mx-auto flex max-w-7xl">
+          {/* Left Sidebar - Hidden on mobile, visible from md */}
+          <div className="hidden md:flex md:w-20 lg:w-64 xl:w-72 border-r border-gray-800 sticky top-0 h-screen">
+            <div className="w-full">
+              <LeftSidebar />
+            </div>
+          </div>
+
+          {/* Main Content - Always visible */}
+          <div className="flex-1 min-w-0 border-r border-gray-800">
+            {/* Mobile Header - Only visible on mobile */}
+            <div className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900/95 backdrop-blur md:hidden">
+              <div className="flex h-14 items-center justify-between px-4">
+                <div className="text-xl font-bold">🐦</div>
                 <button
                   onClick={handleLogout}
-                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium transition hover:bg-gray-700"
+                  className="text-sm text-gray-400 hover:text-white"
                 >
                   Logout
                 </button>
               </div>
             </div>
-          </div>
-        </nav>
 
-        <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-          {/* Tweet Composer */}
-          <TweetComposer onTweetCreated={handleTweetCreated} />
-
-          {/* Feed Header */}
-          <div className="mb-4">
-            <h2 className="text-xl font-bold">Timeline</h2>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            {/* Desktop Header */}
+            <div className="sticky top-0 z-10 border-b border-gray-800 bg-gray-900/95 backdrop-blur hidden md:block">
+              <div className="flex h-14 items-center justify-between px-4">
+                <h1 className="text-xl font-bold">Inicio</h1>
+              </div>
             </div>
-          )}
 
-          {/* Error State */}
-          {error && (
-            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 text-red-400">
-              {error}
+            {/* Tweet Composer */}
+            <div className="border-b border-gray-800">
+              <TweetComposer onTweetCreated={handleTweetCreated} />
             </div>
-          )}
 
-          {/* Tweet List */}
-          {!loading && !error && (
-            <>
-              <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
-              
-              {/* Infinite Scroll Target */}
-              {hasMore && (
-                <div ref={observerTarget} className="flex items-center justify-center py-8">
-                  {loadingMore && (
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                  )}
-                </div>
-              )}
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            )}
 
-              {!hasMore && tweets.length > 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No more tweets to load
-                </div>
-              )}
-            </>
-          )}
-        </main>
+            {/* Error State */}
+            {error && (
+              <div className="m-4 bg-red-900/20 border border-red-700 rounded-lg p-4 text-red-400">
+                {error}
+              </div>
+            )}
+
+            {/* Tweet List */}
+            {!loading && !error && (
+              <>
+                <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
+                
+                {/* Infinite Scroll Target */}
+                {hasMore && (
+                  <div ref={observerTarget} className="flex items-center justify-center py-8">
+                    {loadingMore && (
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    )}
+                  </div>
+                )}
+
+                {!hasMore && tweets.length > 0 && (
+                  <div className="text-center py-8 text-gray-500 border-t border-gray-800">
+                    No hay más tweets
+                  </div>
+                )}
+
+                {!loading && !error && tweets.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="text-4xl mb-4">📝</div>
+                    <div className="text-xl font-bold mb-2">Todavía no hay tweets</div>
+                    <div>Cuando sigas usuarios, sus tweets aparecerán aquí</div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Right Sidebar - Hidden on mobile and tablet, visible from lg */}
+          <div className="hidden lg:block lg:w-80 xl:w-96">
+            <div className="sticky top-0">
+              <RightSidebar />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-gray-900 md:hidden">
+          <div className="flex items-center justify-around py-3">
+            <button className="flex flex-col items-center gap-1 text-white">
+              <span className="text-2xl">🏠</span>
+            </button>
+            <button
+              onClick={() => router.push(`/user/${user?.username}`)}
+              className="flex flex-col items-center gap-1 text-gray-500"
+            >
+              <span className="text-2xl">👤</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex flex-col items-center gap-1 text-gray-500"
+            >
+              <span className="text-2xl">🚪</span>
+            </button>
+          </div>
+        </div>
       </div>
     </ProtectedRoute>
   );

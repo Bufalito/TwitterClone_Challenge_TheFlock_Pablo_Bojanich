@@ -187,4 +187,36 @@ public sealed class UserService : IUserService
         _context.Set<Follow>().Remove(follow);
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<List<UserSearchResult>> GetSuggestedUsersAsync(Guid? currentUserId = null, int limit = 3, CancellationToken cancellationToken = default)
+    {
+        IQueryable<User> query = _context.Set<User>()
+            .Include(u => u.Followers);
+
+        // If user is authenticated, exclude users they already follow and themselves
+        if (currentUserId.HasValue)
+        {
+            var followedIds = await _context.Set<Follow>()
+                .Where(f => f.FollowerId == currentUserId.Value)
+                .Select(f => f.FollowedId)
+                .ToListAsync(cancellationToken);
+
+            query = query.Where(u => u.Id != currentUserId.Value && !followedIds.Contains(u.Id));
+        }
+
+        // Get users with most followers
+        var users = await query
+            .OrderByDescending(u => u.Followers.Count)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+        return users.Select(u => new UserSearchResult(
+            u.Id,
+            u.Username,
+            u.DisplayName,
+            u.Bio,
+            u.Avatar,
+            u.Followers.Count
+        )).ToList();
+    }
 }

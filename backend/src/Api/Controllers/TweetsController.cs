@@ -220,4 +220,25 @@ public class TweetsController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred." });
         }
     }
+
+    [HttpGet("trending")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetTrending([FromQuery] int limit = 5)
+    {
+        try
+        {
+            if (limit < 1 || limit > 10)
+            {
+                return BadRequest(new { error = "Limit must be between 1 and 10." });
+            }
+
+            var trending = await _tweetService.GetTrendingHashtagsAsync(limit);
+            return Ok(trending);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving trending hashtags");
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
 }

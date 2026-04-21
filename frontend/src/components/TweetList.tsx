@@ -115,7 +115,7 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
 
   if (tweets.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-8 text-center text-gray-400">
+      <div className="text-center py-12 text-gray-500">
         <p className="text-lg">No tweets yet.</p>
         <p className="text-sm mt-2">Be the first to tweet!</p>
       </div>
@@ -123,76 +123,89 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div>
       {tweets.map((tweet) => (
         <div
           key={tweet.id}
-          className="bg-gray-800 rounded-lg p-4 sm:p-6 hover:bg-gray-750 transition-colors"
+          className="border-b border-gray-800 p-4 hover:bg-gray-800/50 transition-colors cursor-pointer"
         >
-          {/* Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Link
-                href={`/user/${tweet.username}`}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold hover:bg-gray-600 transition-colors flex-shrink-0"
-              >
+          <div className="flex gap-3">
+            {/* Avatar */}
+            <Link
+              href={`/user/${tweet.username}`}
+              className="flex-shrink-0"
+            >
+              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold hover:opacity-80 transition-opacity">
                 {tweet.displayName.charAt(0).toUpperCase()}
-              </Link>
+              </div>
+            </Link>
 
-              <div className="flex-1 min-w-0">
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-1">
                 <Link
                   href={`/user/${tweet.username}`}
-                  className="hover:underline"
+                  className="font-bold text-white hover:underline truncate"
                 >
-                  <p className="font-semibold text-white truncate">
-                    {tweet.displayName}
-                  </p>
-                  <p className="text-sm text-gray-400 truncate">
-                    @{tweet.username}
-                  </p>
+                  {tweet.displayName}
                 </Link>
+                <Link
+                  href={`/user/${tweet.username}`}
+                  className="text-gray-500 hover:underline truncate"
+                >
+                  @{tweet.username}
+                </Link>
+                <span className="text-gray-500">·</span>
+                <span className="text-gray-500 text-sm flex-shrink-0">
+                  {formatDate(tweet.createdAtUtc)}
+                </span>
+
+                {/* Delete button */}
+                {user && user.id === tweet.userId && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(tweet.id);
+                    }}
+                    disabled={deletingId === tweet.id}
+                    className="ml-auto text-gray-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                    aria-label="Delete tweet"
+                  >
+                    {deletingId === tweet.id ? '⏳' : '🗑️'}
+                  </button>
+                )}
               </div>
 
-              <span className="text-sm text-gray-500 flex-shrink-0">
-                {formatDate(tweet.createdAtUtc)}
-              </span>
+              {/* Tweet Content */}
+              <p className="text-white text-base whitespace-pre-wrap break-words mb-3">
+                {tweet.content}
+              </p>
+
+              {/* Actions */}
+              <div className="flex items-center gap-12 text-gray-500">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLike(tweet.id);
+                  }}
+                  disabled={likingId === tweet.id}
+                  className={`flex items-center gap-2 group transition-colors disabled:opacity-50 ${
+                    likedTweets.has(tweet.id)
+                      ? 'text-pink-600'
+                      : 'hover:text-pink-600'
+                  }`}
+                  aria-label={likedTweets.has(tweet.id) ? 'Unlike tweet' : 'Like tweet'}
+                >
+                  <span className={`text-xl ${likedTweets.has(tweet.id) ? '' : 'group-hover:bg-pink-600/10'} rounded-full p-1.5 transition`}>
+                    {likedTweets.has(tweet.id) ? '❤️' : '🤍'}
+                  </span>
+                  <span className="text-sm">
+                    {likeCounts[tweet.id] || 0}
+                  </span>
+                </button>
+              </div>
             </div>
-
-            {/* Delete button */}
-            {user && user.id === tweet.userId && (
-              <button
-                onClick={() => handleDelete(tweet.id)}
-                disabled={deletingId === tweet.id}
-                className="ml-2 text-red-400 hover:text-red-300 text-sm font-semibold disabled:opacity-50 flex-shrink-0"
-                aria-label="Delete tweet"
-              >
-                {deletingId === tweet.id ? 'Deleting...' : '🗑️'}
-              </button>
-            )}
-          </div>
-
-          {/* Content */}
-          <p className="text-white text-base sm:text-lg whitespace-pre-wrap break-words mb-3">
-            {tweet.content}
-          </p>
-
-          {/* Footer */}
-          <div className="flex items-center gap-6 text-sm text-gray-400">
-            <button
-              onClick={() => handleLike(tweet.id)}
-              disabled={likingId === tweet.id}
-              className={`flex items-center gap-2 transition-colors disabled:opacity-50 ${
-                likedTweets.has(tweet.id)
-                  ? 'text-red-500 hover:text-red-400'
-                  : 'hover:text-red-500'
-              }`}
-              aria-label={likedTweets.has(tweet.id) ? 'Unlike tweet' : 'Like tweet'}
-            >
-              <span className="text-lg">
-                {likedTweets.has(tweet.id) ? '❤️' : '🤍'}
-              </span>
-              <span>{likeCounts[tweet.id] || 0}</span>
-            </button>
           </div>
         </div>
       ))}

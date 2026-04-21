@@ -13,4 +13,6 @@ public interface IUserService
     Task FollowAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default);
 
     Task UnfollowAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default);
+
+    Task<List<UserSearchResult>> GetSuggestedUsersAsync(Guid? currentUserId = null, int limit = 3, CancellationToken cancellationToken = default);
 }

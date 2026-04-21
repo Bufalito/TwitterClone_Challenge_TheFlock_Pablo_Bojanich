@@ -175,4 +175,48 @@ public sealed class TweetService : ITweetService
 
         return tweets;
     }
+
+    public async Task<List<TrendingHashtag>> GetTrendingHashtagsAsync(int limit = 5, CancellationToken cancellationToken = default)
+    {
+        // Get recent tweets
+        var tweets = await _context.Set<Tweet>()
+            .OrderByDescending(t => t.CreatedAtUtc)
+            .Take(1000) // Analyze last 1000 tweets
+            .Select(t => t.Content)
+            .ToListAsync(cancellationToken);
+
+        // Extract hashtags and count them
+        var hashtagCounts = new Dictionary<string, int>();
+        
+        foreach (var content in tweets)
+        {
+            // Find all hashtags in the content (words starting with #)
+            var words = content.Split(' ', '\n', '\r', '\t');
+            foreach (var word in words)
+            {
+                if (word.StartsWith("#") && word.Length > 1)
+                {
+                    var hashtag = word.TrimEnd('.', ',', '!', '?', ':', ';').ToLower();
+                    if (hashtag.Length > 1)
+                    {
+                        if (hashtagCounts.ContainsKey(hashtag))
+                        {
+                            hashtagCounts[hashtag]++;
+                        }
+                        else
+                        {
+                            hashtagCounts[hashtag] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Return top hashtags
+        return hashtagCounts
+            .OrderByDescending(kv => kv.Value)
+            .Take(limit)
+            .Select(kv => new TrendingHashtag(kv.Key, kv.Value))
+            .ToList();
+    }
 }
