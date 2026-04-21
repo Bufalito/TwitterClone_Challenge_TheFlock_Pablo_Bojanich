@@ -87,4 +87,53 @@ public sealed class UserService : IUserService
         var property = typeof(User).GetProperty("Avatar");
         property?.SetValue(user, avatar);
     }
+
+    public async Task<UserProfileResponse?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Set<User>()
+            .Include(u => u.Followers)
+            .Include(u => u.Following)
+            .Include(u => u.Tweets)
+            .FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
+
+        if (user == null)
+        {
+            return null;
+        }
+
+        return new UserProfileResponse(
+            user.Id,
+            user.Username,
+            user.Email,
+            user.DisplayName,
+            user.Bio,
+            user.Avatar,
+            user.Followers.Count,
+            user.Following.Count,
+            user.Tweets.Count,
+            user.CreatedAtUtc
+        );
+    }
+
+    public async Task<List<UserSearchResult>> SearchAsync(string query, CancellationToken cancellationToken = default)
+    {
+        var normalizedQuery = query.Trim().ToLowerInvariant();
+
+        var users = await _context.Set<User>()
+            .Where(u => u.Username.ToLower().Contains(normalizedQuery) ||
+                       u.DisplayName.ToLower().Contains(normalizedQuery))
+            .Include(u => u.Followers)
+            .OrderBy(u => u.Username)
+            .Take(20)
+            .ToListAsync(cancellationToken);
+
+        return users.Select(u => new UserSearchResult(
+            u.Id,
+            u.Username,
+            u.DisplayName,
+            u.Bio,
+            u.Avatar,
+            u.Followers.Count
+        )).ToList();
+    }
 }

@@ -1,3 +1,4 @@
+using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +12,13 @@ namespace Api.Controllers;
 public class UserController : ControllerBase
 {
     private readonly DbContext _context;
+    private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
 
-    public UserController(DbContext context, ILogger<UserController> logger)
+    public UserController(DbContext context, IUserService userService, ILogger<UserController> logger)
     {
         _context = context;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -53,6 +56,49 @@ public class UserController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving current user");
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet("{username}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetByUsername(string username)
+    {
+        try
+        {
+            var profile = await _userService.GetByUsernameAsync(username);
+
+            if (profile == null)
+            {
+                return NotFound(new { error = $"User '{username}' not found." });
+            }
+
+            return Ok(profile);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user profile for {Username}", username);
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpGet("search")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Search([FromQuery] string q)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return BadRequest(new { error = "Search query 'q' is required." });
+            }
+
+            var results = await _userService.SearchAsync(q);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching users with query {Query}", q);
             return StatusCode(500, new { error = "An unexpected error occurred." });
         }
     }

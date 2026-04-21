@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
+import UserSearch from "@/components/UserSearch";
 
 export default function Home() {
   const { token, user, loadUser } = useAuthStore();
@@ -61,6 +62,11 @@ export default function Home() {
               Connecting...
             </p>
           )}
+        </div>
+
+        {/* User Search */}
+        <div className="w-full">
+          <UserSearch />
         </div>
 
         {token && user ? (
