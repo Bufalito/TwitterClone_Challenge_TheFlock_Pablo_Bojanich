@@ -107,3 +107,72 @@ docker compose down
 # Detener y borrar volúmenes (resetea la DB)
 docker compose down -v
 ```
+
+## Seed Data (Datos de Prueba)
+
+Al iniciar el backend en modo Development, se te preguntará si deseas generar datos de prueba.
+
+### ¿Cómo usar el seed?
+
+1. **Al levantar con Docker Compose:**
+   ```bash
+   docker compose up --build
+   ```
+   El backend te mostrará un prompt:
+   ```
+   ╔════════════════════════════════════════════╗
+   ║     TwitterClone Database Setup            ║
+   ╚════════════════════════════════════════════╝
+   
+   Do you want to seed the database with sample data?
+   This will create 12 test users, tweets, follows, and likes.
+   
+   ⚠️  Warning: Skip this if your database already has data.
+   
+   Type 'yes' to seed, or press Enter to skip:
+   ```
+   
+2. **Escribe `yes`** y presiona Enter para generar los datos.
+
+3. **Si ya tienes datos**, solo presiona Enter para continuar sin seed.
+
+### Datos generados
+
+El seed crea:
+- ✅ **12 usuarios** con perfiles completos
+- ✅ **36 tweets** con contenido variado (#hashtags incluidos)
+- ✅ **48 relaciones de follow** (red social conectada)
+- ✅ **36 likes** distribuidos entre usuarios
+
+### Credenciales de prueba
+
+Todos los usuarios tienen la misma contraseña para facilitar las pruebas:
+
+| Username   | Email              | Password      | Descripción                                    |
+|------------|-------------------|---------------|------------------------------------------------|
+| `johndoe`  | john@example.com  | `Password123!` | Software engineer                              |
+| `janedoe`  | jane@example.com  | `Password123!` | Tech enthusiast                                |
+| `alice`    | alice@example.com | `Password123!` | Designer & Developer                           |
+| `bob`      | bob@example.com   | `Password123!` | Full-stack developer                           |
+| `charlie`  | charlie@example.com | `Password123!` | Data scientist                               |
+| `diana`    | diana@example.com | `Password123!` | Product manager                                |
+| `eve`      | eve@example.com   | `Password123!` | Frontend developer                             |
+| `frank`    | frank@example.com | `Password123!` | Backend engineer                               |
+| `grace`    | grace@example.com | `Password123!` | Computer scientist                             |
+| `henry`    | henry@example.com | `Password123!` | Entrepreneur                                   |
+| `isabel`   | isabel@example.com | `Password123!` | UX/UI Designer                                |
+| `jack`     | jack@example.com  | `Password123!` | DevOps engineer                                |
+
+**💡 Tip:** Puedes iniciar sesión con cualquiera de estos usuarios usando su username y la contraseña `Password123!`
+
+### Resetear la base de datos
+
+Si quieres volver a generar los datos de prueba desde cero:
+
+```bash
+# Detener servicios y borrar volúmenes
+docker compose down -v
+
+# Levantar de nuevo y responder 'yes' al prompt
+docker compose up --build
+```

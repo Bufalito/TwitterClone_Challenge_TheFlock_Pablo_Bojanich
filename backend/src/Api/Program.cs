@@ -53,6 +53,41 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Ask if user wants to seed the database
+if (!app.Environment.IsProduction())
+{
+    Console.WriteLine("\n╔════════════════════════════════════════════╗");
+    Console.WriteLine("║     TwitterClone Database Setup            ║");
+    Console.WriteLine("╚════════════════════════════════════════════╝");
+    Console.WriteLine("\nDo you want to seed the database with sample data?");
+    Console.WriteLine("This will create 12 test users, tweets, follows, and likes.");
+    Console.WriteLine("\n⚠️  Warning: Skip this if your database already has data.");
+    Console.WriteLine("\nType 'yes' to seed, or press Enter to skip: ");
+    
+    var response = Console.ReadLine()?.Trim().ToLower();
+    
+    if (response == "yes" || response == "y")
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<Infrastructure.Persistence.ApplicationDbContext>();
+            var passwordHasher = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.IPasswordHasher<Domain.Entities.User>>();
+            
+            var seeder = new Infrastructure.Persistence.DatabaseSeeder(context, passwordHasher);
+            await seeder.SeedAsync();
+        }
+        
+        Console.WriteLine("\n✅ Database seeded successfully!");
+        Console.WriteLine("Press any key to start the application...");
+        Console.ReadKey();
+        Console.Clear();
+    }
+    else
+    {
+        Console.WriteLine("\n⏭️  Skipping database seed.");
+    }
+}
+
 app.UseCors();
 
 app.UseAuthentication();
