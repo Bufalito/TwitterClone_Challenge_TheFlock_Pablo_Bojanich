@@ -27,7 +27,15 @@ public sealed class TweetService : ITweetService
             throw new InvalidOperationException("User not found.");
         }
 
-        var tweet = new Tweet(userId, request.Content);
+        if (request.ParentTweetId.HasValue)
+        {
+            var parentExists = await _context.Set<Tweet>()
+                .AnyAsync(t => t.Id == request.ParentTweetId.Value, cancellationToken);
+            if (!parentExists)
+                throw new InvalidOperationException("Parent tweet not found.");
+        }
+
+        var tweet = new Tweet(userId, request.Content, request.ParentTweetId);
 
         _context.Set<Tweet>().Add(tweet);
         await _context.SaveChangesAsync(cancellationToken);
@@ -40,7 +48,9 @@ public sealed class TweetService : ITweetService
             user.Username,
             user.DisplayName,
             0,
-            false
+            false,
+            tweet.ParentTweetId,
+            0
         );
     }
 
@@ -68,6 +78,8 @@ public sealed class TweetService : ITweetService
         var tweets = await _context.Set<Tweet>()
             .Include(t => t.User)
             .Include(t => t.Likes)
+            .Include(t => t.Replies)
+            .Where(t => t.ParentTweetId == null)
             .OrderByDescending(t => t.CreatedAtUtc)
             .Take(count)
             .ToListAsync(cancellationToken);
@@ -80,7 +92,9 @@ public sealed class TweetService : ITweetService
             t.User.Username,
             t.User.DisplayName,
             t.Likes.Count,
-            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value)
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value),
+            t.ParentTweetId,
+            t.Replies.Count
         )).ToList();
     }
 
@@ -89,6 +103,7 @@ public sealed class TweetService : ITweetService
         var tweets = await _context.Set<Tweet>()
             .Include(t => t.User)
             .Include(t => t.Likes)
+            .Include(t => t.Replies)
             .Where(t => t.User.Username == username)
             .OrderByDescending(t => t.CreatedAtUtc)
             .ToListAsync(cancellationToken);
@@ -101,7 +116,9 @@ public sealed class TweetService : ITweetService
             t.User.Username,
             t.User.DisplayName,
             t.Likes.Count,
-            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value)
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value),
+            t.ParentTweetId,
+            t.Replies.Count
         )).ToList();
     }
 
@@ -154,10 +171,10 @@ public sealed class TweetService : ITweetService
             .Select(f => f.FollowedId)
             .ToListAsync(cancellationToken);
 
-        // Get timeline tweets (user's own tweets + followed users' tweets)
+        // Get timeline tweets (user's own tweets + followed users' tweets, top-level only)
         var tweets = await _context.Set<Tweet>()
             .Include(t => t.User)
-            .Where(t => t.UserId == userId || followedIds.Contains(t.UserId))
+            .Where(t => (t.UserId == userId || followedIds.Contains(t.UserId)) && t.ParentTweetId == null)
             .OrderByDescending(t => t.CreatedAtUtc)
             .Skip(offset)
             .Take(pageSize)
@@ -169,7 +186,9 @@ public sealed class TweetService : ITweetService
                 t.User.Username,
                 t.User.DisplayName,
                 _context.Set<Like>().Count(l => l.TweetId == t.Id),
-                _context.Set<Like>().Any(l => l.TweetId == t.Id && l.UserId == userId)
+                _context.Set<Like>().Any(l => l.TweetId == t.Id && l.UserId == userId),
+                t.ParentTweetId,
+                _context.Set<Tweet>().Count(r => r.ParentTweetId == t.Id)
             ))
             .ToListAsync(cancellationToken);
 
@@ -247,7 +266,57 @@ public sealed class TweetService : ITweetService
             t.User.Username,
             t.User.DisplayName,
             t.Likes.Count,
-            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value)
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value),
+            t.ParentTweetId,
+            t.Replies.Count
+        )).ToList();
+    }
+
+    public async Task<TweetResponse?> GetByIdAsync(Guid tweetId, Guid? currentUserId = null, CancellationToken cancellationToken = default)
+    {
+        var tweet = await _context.Set<Tweet>()
+            .Include(t => t.User)
+            .Include(t => t.Likes)
+            .Include(t => t.Replies)
+            .FirstOrDefaultAsync(t => t.Id == tweetId, cancellationToken);
+
+        if (tweet == null) return null;
+
+        return new TweetResponse(
+            tweet.Id,
+            tweet.UserId,
+            tweet.Content,
+            tweet.CreatedAtUtc,
+            tweet.User.Username,
+            tweet.User.DisplayName,
+            tweet.Likes.Count,
+            currentUserId.HasValue && tweet.Likes.Any(l => l.UserId == currentUserId.Value),
+            tweet.ParentTweetId,
+            tweet.Replies.Count
+        );
+    }
+
+    public async Task<List<TweetResponse>> GetRepliesAsync(Guid tweetId, Guid? currentUserId = null, CancellationToken cancellationToken = default)
+    {
+        var replies = await _context.Set<Tweet>()
+            .Include(t => t.User)
+            .Include(t => t.Likes)
+            .Include(t => t.Replies)
+            .Where(t => t.ParentTweetId == tweetId)
+            .OrderBy(t => t.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return replies.Select(t => new TweetResponse(
+            t.Id,
+            t.UserId,
+            t.Content,
+            t.CreatedAtUtc,
+            t.User.Username,
+            t.User.DisplayName,
+            t.Likes.Count,
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value),
+            t.ParentTweetId,
+            t.Replies.Count
         )).ToList();
     }
 }

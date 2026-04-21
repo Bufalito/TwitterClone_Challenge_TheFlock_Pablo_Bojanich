@@ -8,5 +8,7 @@ public record TweetResponse(
     string Username,
     string DisplayName,
     int LikesCount,
-    bool IsLikedByCurrentUser
+    bool IsLikedByCurrentUser,
+    Guid? ParentTweetId,
+    int RepliesCount
 );

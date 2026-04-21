@@ -21,4 +21,8 @@ public interface ITweetService
     Task<List<TrendingHashtag>> GetTrendingHashtagsAsync(int limit = 5, CancellationToken cancellationToken = default);
 
     Task<List<TweetResponse>> GetLikedTweetsAsync(Guid userId, Guid? currentUserId = null, CancellationToken cancellationToken = default);
+
+    Task<TweetResponse?> GetByIdAsync(Guid tweetId, Guid? currentUserId = null, CancellationToken cancellationToken = default);
+
+    Task<List<TweetResponse>> GetRepliesAsync(Guid tweetId, Guid? currentUserId = null, CancellationToken cancellationToken = default);
 }
