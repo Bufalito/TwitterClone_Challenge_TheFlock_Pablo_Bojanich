@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, UserProfile, TweetResponse } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import TweetList from '@/components/TweetList';
 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
+  const { token } = useAuthStore();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tweets, setTweets] = useState<TweetResponse[]>([]);
@@ -33,7 +35,7 @@ export default function UserProfilePage() {
     const fetchTweets = async () => {
       try {
         setTweetsLoading(true);
-        const data = await api.tweets.getByUser(username);
+        const data = await api.tweets.getByUser(username, token || undefined);
         setTweets(data);
       } catch (err: any) {
         console.error('Failed to load tweets:', err);
@@ -46,7 +48,7 @@ export default function UserProfilePage() {
       fetchProfile();
       fetchTweets();
     }
-  }, [username]);
+  }, [username, token]);
 
   const handleTweetDeleted = (tweetId: string) => {
     setTweets(tweets.filter((t) => t.id !== tweetId));

@@ -36,7 +36,8 @@ public sealed class TweetService : ITweetService
             tweet.CreatedAtUtc,
             user.Username,
             user.DisplayName,
-            0
+            0,
+            false
         );
     }
 
@@ -59,7 +60,7 @@ public sealed class TweetService : ITweetService
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<List<TweetResponse>> GetRecentAsync(int count = 20, CancellationToken cancellationToken = default)
+    public async Task<List<TweetResponse>> GetRecentAsync(int count = 20, Guid? currentUserId = null, CancellationToken cancellationToken = default)
     {
         var tweets = await _context.Set<Tweet>()
             .Include(t => t.User)
@@ -75,11 +76,12 @@ public sealed class TweetService : ITweetService
             t.CreatedAtUtc,
             t.User.Username,
             t.User.DisplayName,
-            t.Likes.Count
+            t.Likes.Count,
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value)
         )).ToList();
     }
 
-    public async Task<List<TweetResponse>> GetByUserAsync(string username, CancellationToken cancellationToken = default)
+    public async Task<List<TweetResponse>> GetByUserAsync(string username, Guid? currentUserId = null, CancellationToken cancellationToken = default)
     {
         var tweets = await _context.Set<Tweet>()
             .Include(t => t.User)
@@ -95,7 +97,47 @@ public sealed class TweetService : ITweetService
             t.CreatedAtUtc,
             t.User.Username,
             t.User.DisplayName,
-            t.Likes.Count
+            t.Likes.Count,
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value)
         )).ToList();
+    }
+
+    public async Task LikeAsync(Guid userId, Guid tweetId, CancellationToken cancellationToken = default)
+    {
+        // Check if tweet exists
+        var tweetExists = await _context.Set<Tweet>()
+            .AnyAsync(t => t.Id == tweetId, cancellationToken);
+
+        if (!tweetExists)
+        {
+            throw new InvalidOperationException($"Tweet with ID '{tweetId}' not found.");
+        }
+
+        // Check if like already exists
+        var likeExists = await _context.Set<Like>()
+            .AnyAsync(l => l.UserId == userId && l.TweetId == tweetId, cancellationToken);
+
+        if (likeExists)
+        {
+            throw new InvalidOperationException("You have already liked this tweet.");
+        }
+
+        var like = new Like(userId, tweetId);
+        _context.Set<Like>().Add(like);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UnlikeAsync(Guid userId, Guid tweetId, CancellationToken cancellationToken = default)
+    {
+        var like = await _context.Set<Like>()
+            .FirstOrDefaultAsync(l => l.UserId == userId && l.TweetId == tweetId, cancellationToken);
+
+        if (like == null)
+        {
+            throw new InvalidOperationException("You have not liked this tweet.");
+        }
+
+        _context.Set<Like>().Remove(like);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

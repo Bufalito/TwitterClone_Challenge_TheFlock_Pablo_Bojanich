@@ -32,6 +32,7 @@ describe('TweetList', () => {
       username: 'testuser',
       displayName: 'Test User',
       likesCount: 5,
+      isLikedByCurrentUser: false,
     },
     {
       id: '2',
@@ -41,6 +42,7 @@ describe('TweetList', () => {
       username: 'anotheruser',
       displayName: 'Another User',
       likesCount: 3,
+      isLikedByCurrentUser: false,
     },
   ];
 

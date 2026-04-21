@@ -14,6 +14,13 @@ interface TweetListProps {
 export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
   const { token, user } = useAuthStore();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [likingId, setLikingId] = useState<string | null>(null);
+  const [likedTweets, setLikedTweets] = useState<Set<string>>(
+    new Set(tweets.filter(t => t.isLikedByCurrentUser).map(t => t.id))
+  );
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>(
+    tweets.reduce((acc, tweet) => ({ ...acc, [tweet.id]: tweet.likesCount }), {})
+  );
 
   const handleDelete = async (tweetId: string) => {
     if (!token || !confirm('Are you sure you want to delete this tweet?')) {
@@ -28,6 +35,61 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
       alert(`Failed to delete tweet: ${err.message}`);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleLike = async (tweetId: string) => {
+    if (!token) {
+      alert('Please login to like tweets');
+      return;
+    }
+
+    const isLiked = likedTweets.has(tweetId);
+    
+    setLikingId(tweetId);
+    
+    // Optimistic update
+    setLikedTweets((prev) => {
+      const newSet = new Set(prev);
+      if (isLiked) {
+        newSet.delete(tweetId);
+      } else {
+        newSet.add(tweetId);
+      }
+      return newSet;
+    });
+
+    setLikeCounts((prev) => ({
+      ...prev,
+      [tweetId]: isLiked ? prev[tweetId] - 1 : prev[tweetId] + 1,
+    }));
+
+    try {
+      if (isLiked) {
+        await api.tweets.unlike(token, tweetId);
+      } else {
+        await api.tweets.like(token, tweetId);
+      }
+    } catch (err: any) {
+      // Revert optimistic update on error
+      setLikedTweets((prev) => {
+        const newSet = new Set(prev);
+        if (isLiked) {
+          newSet.add(tweetId);
+        } else {
+          newSet.delete(tweetId);
+        }
+        return newSet;
+      });
+
+      setLikeCounts((prev) => ({
+        ...prev,
+        [tweetId]: isLiked ? prev[tweetId] + 1 : prev[tweetId] - 1,
+      }));
+
+      alert(`Failed to ${isLiked ? 'unlike' : 'like'} tweet: ${err.message}`);
+    } finally {
+      setLikingId(null);
     }
   };
 
@@ -116,10 +178,21 @@ export default function TweetList({ tweets, onTweetDeleted }: TweetListProps) {
 
           {/* Footer */}
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <span>❤️</span>
-              <span>{tweet.likesCount}</span>
-            </div>
+            <button
+              onClick={() => handleLike(tweet.id)}
+              disabled={likingId === tweet.id}
+              className={`flex items-center gap-2 transition-colors disabled:opacity-50 ${
+                likedTweets.has(tweet.id)
+                  ? 'text-red-500 hover:text-red-400'
+                  : 'hover:text-red-500'
+              }`}
+              aria-label={likedTweets.has(tweet.id) ? 'Unlike tweet' : 'Like tweet'}
+            >
+              <span className="text-lg">
+                {likedTweets.has(tweet.id) ? '❤️' : '🤍'}
+              </span>
+              <span>{likeCounts[tweet.id] || 0}</span>
+            </button>
           </div>
         </div>
       ))}
