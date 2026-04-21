@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { api, UserProfile } from '@/lib/api';
+import { api, UserProfile, TweetResponse } from '@/lib/api';
+import TweetList from '@/components/TweetList';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -10,7 +11,9 @@ export default function UserProfilePage() {
   const username = params.username as string;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [tweets, setTweets] = useState<TweetResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tweetsLoading, setTweetsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,10 +30,27 @@ export default function UserProfilePage() {
       }
     };
 
+    const fetchTweets = async () => {
+      try {
+        setTweetsLoading(true);
+        const data = await api.tweets.getByUser(username);
+        setTweets(data);
+      } catch (err: any) {
+        console.error('Failed to load tweets:', err);
+      } finally {
+        setTweetsLoading(false);
+      }
+    };
+
     if (username) {
       fetchProfile();
+      fetchTweets();
     }
   }, [username]);
+
+  const handleTweetDeleted = (tweetId: string) => {
+    setTweets(tweets.filter((t) => t.id !== tweetId));
+  };
 
   if (loading) {
     return (
@@ -119,10 +139,17 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* Tweets Section - Placeholder */}
-        <div className="bg-gray-800 rounded-lg p-6 sm:p-8">
+        {/* Tweets Section */}
+        <div>
           <h2 className="text-xl font-bold mb-4">Tweets</h2>
-          <p className="text-gray-400 text-center py-8">No tweets yet.</p>
+          
+          {tweetsLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
+          )}
         </div>
       </div>
     </div>
