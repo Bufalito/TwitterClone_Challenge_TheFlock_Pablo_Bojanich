@@ -11,7 +11,7 @@ import { api, TweetResponse } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, token } = useAuthStore();
   const [tweets, setTweets] = useState<TweetResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.tweets.getRecent(50);
+      const data = await api.tweets.getRecent(50, token || undefined);
       setTweets(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load tweets');

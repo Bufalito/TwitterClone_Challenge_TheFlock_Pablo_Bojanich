@@ -82,6 +82,7 @@ describe('TweetComposer', () => {
       username: 'testuser',
       displayName: 'Test User',
       likesCount: 0,
+      isLikedByCurrentUser: false,
     };
 
     (api.tweets.create as jest.Mock).mockResolvedValue(mockTweet);
@@ -125,6 +126,7 @@ describe('TweetComposer', () => {
       username: 'testuser',
       displayName: 'Test User',
       likesCount: 0,
+      isLikedByCurrentUser: false,
     };
 
     (api.tweets.create as jest.Mock).mockResolvedValue(mockTweet);

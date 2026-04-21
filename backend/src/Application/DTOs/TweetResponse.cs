@@ -7,5 +7,6 @@ public record TweetResponse(
     DateTime CreatedAtUtc,
     string Username,
     string DisplayName,
-    int LikesCount
+    int LikesCount,
+    bool IsLikedByCurrentUser
 );

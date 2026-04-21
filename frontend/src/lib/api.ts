@@ -51,6 +51,7 @@ export interface TweetResponse {
   username: string;
   displayName: string;
   likesCount: number;
+  isLikedByCurrentUser: boolean;
 }
 
 export interface CreateTweetRequest {
@@ -137,11 +138,31 @@ export const api = {
         },
       }),
 
-    getRecent: (count: number = 20) =>
-      fetchApi<TweetResponse[]>(`/api/tweets?count=${count}`),
+    getRecent: (count: number = 20, token?: string) =>
+      fetchApi<TweetResponse[]>(`/api/tweets?count=${count}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
 
-    getByUser: (username: string) =>
-      fetchApi<TweetResponse[]>(`/api/tweets/user/${username}`),
+    getByUser: (username: string, token?: string) =>
+      fetchApi<TweetResponse[]>(`/api/tweets/user/${username}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
+
+    like: (token: string, tweetId: string) =>
+      fetchApi<{ message: string }>(`/api/tweets/${tweetId}/like`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+
+    unlike: (token: string, tweetId: string) =>
+      fetchApi<{ message: string }>(`/api/tweets/${tweetId}/like`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
   },
 };
 
