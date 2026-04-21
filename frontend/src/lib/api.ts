@@ -59,6 +59,11 @@ export interface CreateTweetRequest {
   content: string;
 }
 
+export interface TrendingHashtag {
+  hashtag: string;
+  count: number;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -137,6 +142,11 @@ export const api = {
           Authorization: `Bearer ${token}`,
         },
       }),
+
+    getSuggestions: (limit: number = 3, token?: string) =>
+      fetchApi<UserSearchResult[]>(`/api/user/suggestions?limit=${limit}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
   },
 
   tweets: {
@@ -188,6 +198,14 @@ export const api = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+      }),
+
+    getTrending: (limit: number = 5) =>
+      fetchApi<TrendingHashtag[]>(`/api/tweets/trending?limit=${limit}`),
+
+    getLiked: (userId: string, token?: string) =>
+      fetchApi<TweetResponse[]>(`/api/tweets/liked/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       }),
   },
 };

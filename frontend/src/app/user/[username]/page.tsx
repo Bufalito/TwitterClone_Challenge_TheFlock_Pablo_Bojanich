@@ -14,10 +14,13 @@ export default function UserProfilePage() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tweets, setTweets] = useState<TweetResponse[]>([]);
+  const [likedTweets, setLikedTweets] = useState<TweetResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [tweetsLoading, setTweetsLoading] = useState(true);
+  const [likedLoading, setLikedLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'tweets' | 'likes'>('tweets');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -50,6 +53,24 @@ export default function UserProfilePage() {
       fetchTweets();
     }
   }, [username, token]);
+
+  useEffect(() => {
+    const fetchLikedTweets = async () => {
+      if (!profile || activeTab !== 'likes' || likedTweets.length > 0) return;
+      
+      try {
+        setLikedLoading(true);
+        const data = await api.tweets.getLiked(profile.id, token || undefined);
+        setLikedTweets(data);
+      } catch (err: any) {
+        console.error('Failed to load liked tweets:', err);
+      } finally {
+        setLikedLoading(false);
+      }
+    };
+
+    fetchLikedTweets();
+  }, [activeTab, profile?.id, token]);
 
   const handleFollowToggle = async () => {
     if (!token || !profile) return;
@@ -187,16 +208,60 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* Tweets Section */}
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex border-b border-gray-700">
+            <button
+              onClick={() => setActiveTab('tweets')}
+              className={`flex-1 py-4 font-semibold transition-colors ${
+                activeTab === 'tweets'
+                  ? 'text-blue-500 border-b-2 border-blue-500'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Tweets
+            </button>
+            <button
+              onClick={() => setActiveTab('likes')}
+              className={`flex-1 py-4 font-semibold transition-colors ${
+                activeTab === 'likes'
+                  ? 'text-blue-500 border-b-2 border-blue-500'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Likes
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
         <div>
-          <h2 className="text-xl font-bold mb-4">Tweets</h2>
+          {activeTab === 'tweets' && (
+            <>
+              {tweetsLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
+              )}
+            </>
+          )}
           
-          {tweetsLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            </div>
-          ) : (
-            <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
+          {activeTab === 'likes' && (
+            <>
+              {likedLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+              ) : likedTweets.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-xl">No liked tweets yet</p>
+                </div>
+              ) : (
+                <TweetList tweets={likedTweets} onTweetDeleted={(id) => setLikedTweets(likedTweets.filter(t => t.id !== id))} />
+              )}
+            </>
           )}
         </div>
       </div>

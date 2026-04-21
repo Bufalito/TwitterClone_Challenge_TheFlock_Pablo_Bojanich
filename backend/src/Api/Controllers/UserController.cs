@@ -166,4 +166,33 @@ public class UserController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred." });
         }
     }
+
+    [HttpGet("suggestions")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetSuggestions([FromQuery] int limit = 3)
+    {
+        try
+        {
+            if (limit < 1 || limit > 10)
+            {
+                return BadRequest(new { error = "Limit must be between 1 and 10." });
+            }
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid? currentUserId = null;
+            
+            if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userGuid))
+            {
+                currentUserId = userGuid;
+            }
+
+            var suggestions = await _userService.GetSuggestedUsersAsync(currentUserId, limit);
+            return Ok(suggestions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user suggestions");
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
 }

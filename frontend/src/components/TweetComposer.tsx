@@ -54,46 +54,56 @@ export default function TweetComposer({ onTweetCreated }: TweetComposerProps) {
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+    <div className="p-4">
       <form onSubmit={handleSubmit}>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="What's happening?"
-          className="w-full bg-gray-900 text-white border border-gray-700 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-          rows={3}
-          maxLength={maxLength}
-        />
-
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-4">
-            <span
-              className={`text-sm ${
-                remainingChars < 20
-                  ? 'text-red-400'
-                  : remainingChars < 50
-                  ? 'text-yellow-400'
-                  : 'text-gray-400'
-              }`}
-            >
-              {remainingChars} characters left
-            </span>
+        <div className="flex gap-4">
+          <div className="flex-shrink-0">
+            <div className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+              {/* User avatar placeholder */}
+              👤
+            </div>
           </div>
+          <div className="flex-1">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="What's happening?"
+              className="w-full bg-transparent text-white text-xl placeholder-gray-500 focus:outline-none resize-none border-none"
+              rows={3}
+              maxLength={maxLength}
+            />
 
-          <button
-            type="submit"
-            disabled={loading || content.trim().length === 0 || content.length > maxLength}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Posting...' : 'Tweet'}
-          </button>
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-sm ${
+                    remainingChars < 20
+                      ? 'text-red-400'
+                      : remainingChars < 50
+                      ? 'text-yellow-400'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {remainingChars} characters left
+                </span>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || content.trim().length === 0 || content.length > maxLength}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Posting...' : 'Tweet'}
+              </button>
+            </div>
+
+            {error && (
+              <div className="mt-4 p-3 bg-red-900/20 border border-red-700 rounded-lg text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+          </div>
         </div>
-
-        {error && (
-          <div className="mt-4 p-3 bg-red-900/20 border border-red-700 rounded-lg text-red-400 text-sm">
-            {error}
-          </div>
-        )}
       </form>
     </div>
   );
