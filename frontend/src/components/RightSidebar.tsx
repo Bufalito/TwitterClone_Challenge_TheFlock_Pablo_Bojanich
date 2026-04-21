@@ -12,6 +12,8 @@ export default function RightSidebar() {
   const [suggestedUsers, setSuggestedUsers] = useState<UserSearchResult[]>([]);
   const [trendingHashtags, setTrendingHashtags] = useState<TrendingHashtag[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -29,6 +31,31 @@ export default function RightSidebar() {
     };
     loadData();
   }, [token]);
+
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+        return;
+      }
+
+      try {
+        const results = await api.user.search(searchQuery.trim());
+        setSearchResults(results.slice(0, 5));
+        setShowSearchResults(true);
+      } catch (err) {
+        console.error('Error searching users:', err);
+        setSearchResults([]);
+      }
+    };
+
+    const debounce = setTimeout(() => {
+      searchUsers();
+    }, 300);
+
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,16 +85,39 @@ export default function RightSidebar() {
   return (
     <div className="h-screen overflow-y-auto py-4 px-4">
       {/* Search Bar */}
-      <div className="mb-4">
+      <div className="mb-4 relative">
         <form onSubmit={handleSearch}>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => searchQuery.trim().length >= 2 && setShowSearchResults(true)}
+            onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
             placeholder="Buscar"
             className="w-full rounded-full bg-gray-800 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </form>
+
+        {/* Search Results Dropdown */}
+        {showSearchResults && searchResults.length > 0 && (
+          <div className="absolute z-50 w-full mt-2 bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden">
+            {searchResults.map((user) => (
+              <Link
+                key={user.id}
+                href={`/user/${user.username}`}
+                className="flex items-center gap-3 p-3 hover:bg-gray-700 transition"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white font-bold shrink-0">
+                  {user.displayName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-sm truncate">{user.displayName}</div>
+                  <div className="text-gray-500 text-xs truncate">@{user.username}</div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* What's Happening */}

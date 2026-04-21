@@ -19,4 +19,6 @@ public interface ITweetService
     Task UnlikeAsync(Guid userId, Guid tweetId, CancellationToken cancellationToken = default);
 
     Task<List<TrendingHashtag>> GetTrendingHashtagsAsync(int limit = 5, CancellationToken cancellationToken = default);
+
+    Task<List<TweetResponse>> GetLikedTweetsAsync(Guid userId, Guid? currentUserId = null, CancellationToken cancellationToken = default);
 }

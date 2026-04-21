@@ -56,13 +56,13 @@ export default function LeftSidebar() {
       </div>
 
       {/* User Info */}
-      {user && user.name && user.username && (
+      {user && user.displayName && user.username && (
         <div className="mt-auto px-4 py-3 hover:bg-gray-800 rounded-full cursor-pointer flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white font-bold">
-            {user.name.charAt(0).toUpperCase()}
+            {user.displayName.charAt(0).toUpperCase()}
           </div>
           <div className="hidden xl:block">
-            <div className="font-bold text-sm">{user.name}</div>
+            <div className="font-bold text-sm">{user.displayName}</div>
             <div className="text-gray-500 text-sm">@{user.username}</div>
           </div>
         </div>

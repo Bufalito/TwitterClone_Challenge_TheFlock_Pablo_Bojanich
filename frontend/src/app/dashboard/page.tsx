@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -15,68 +15,27 @@ export default function DashboardPage() {
   const { user, logout, token } = useAuthStore();
   const [tweets, setTweets] = useState<TweetResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadTweets = async (pageNum: number, append = false) => {
+  const loadTweets = async () => {
     if (!token) return;
     
     try {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+      setLoading(true);
       setError(null);
       
-      const data = await api.tweets.getTimeline(token, pageNum, 20);
-      
-      if (append) {
-        setTweets((prev) => [...prev, ...data]);
-      } else {
-        setTweets(data);
-      }
-      
-      if (data.length < 20) {
-        setHasMore(false);
-      }
+      const data = await api.tweets.getRecent(100, token);
+      setTweets(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load tweets');
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    loadTweets(1);
+    loadTweets();
   }, [token]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, loading]);
-
-  useEffect(() => {
-    if (page > 1) {
-      loadTweets(page, true);
-    }
-  }, [page]);
 
   const handleTweetCreated = (newTweet: TweetResponse) => {
     setTweets([newTweet, ...tweets]);
@@ -147,29 +106,14 @@ export default function DashboardPage() {
             {/* Tweet List */}
             {!loading && !error && (
               <>
-                <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
-                
-                {/* Infinite Scroll Target */}
-                {hasMore && (
-                  <div ref={observerTarget} className="flex items-center justify-center py-8">
-                    {loadingMore && (
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    )}
-                  </div>
-                )}
-
-                {!hasMore && tweets.length > 0 && (
-                  <div className="text-center py-8 text-gray-500 border-t border-gray-800">
-                    No hay más tweets
-                  </div>
-                )}
-
-                {!loading && !error && tweets.length === 0 && (
+                {tweets.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
                     <div className="text-4xl mb-4">📝</div>
                     <div className="text-xl font-bold mb-2">Todavía no hay tweets</div>
-                    <div>Cuando sigas usuarios, sus tweets aparecerán aquí</div>
+                    <div>Sé el primero en publicar algo</div>
                   </div>
+                ) : (
+                  <TweetList tweets={tweets} onTweetDeleted={handleTweetDeleted} />
                 )}
               </>
             )}

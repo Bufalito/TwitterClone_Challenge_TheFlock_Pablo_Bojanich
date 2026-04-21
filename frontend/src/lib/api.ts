@@ -202,6 +202,11 @@ export const api = {
 
     getTrending: (limit: number = 5) =>
       fetchApi<TrendingHashtag[]>(`/api/tweets/trending?limit=${limit}`),
+
+    getLiked: (userId: string, token?: string) =>
+      fetchApi<TweetResponse[]>(`/api/tweets/liked/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
   },
 };
 

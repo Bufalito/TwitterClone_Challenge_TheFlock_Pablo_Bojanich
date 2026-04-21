@@ -241,4 +241,28 @@ public class TweetsController : ControllerBase
             return StatusCode(500, new { error = "An unexpected error occurred." });
         }
     }
+
+    [HttpGet("liked/{userId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetLikedTweets(Guid userId)
+    {
+        try
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid? currentUserGuid = null;
+            
+            if (!string.IsNullOrEmpty(currentUserId) && Guid.TryParse(currentUserId, out var userGuid))
+            {
+                currentUserGuid = userGuid;
+            }
+
+            var tweets = await _tweetService.GetLikedTweetsAsync(userId, currentUserGuid);
+            return Ok(tweets);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving liked tweets for user {UserId}", userId);
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
 }

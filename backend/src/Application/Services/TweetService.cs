@@ -219,4 +219,35 @@ public sealed class TweetService : ITweetService
             .Select(kv => new TrendingHashtag(kv.Key, kv.Value))
             .ToList();
     }
+
+    public async Task<List<TweetResponse>> GetLikedTweetsAsync(Guid userId, Guid? currentUserId = null, CancellationToken cancellationToken = default)
+    {
+        var likedTweetIds = await _context.Set<Like>()
+            .Where(l => l.UserId == userId)
+            .Select(l => l.TweetId)
+            .ToListAsync(cancellationToken);
+
+        if (!likedTweetIds.Any())
+        {
+            return new List<TweetResponse>();
+        }
+
+        var tweets = await _context.Set<Tweet>()
+            .Include(t => t.User)
+            .Include(t => t.Likes)
+            .Where(t => likedTweetIds.Contains(t.Id))
+            .OrderByDescending(t => t.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return tweets.Select(t => new TweetResponse(
+            t.Id,
+            t.UserId,
+            t.Content,
+            t.CreatedAtUtc,
+            t.User.Username,
+            t.User.DisplayName,
+            t.Likes.Count,
+            currentUserId.HasValue && t.Likes.Any(l => l.UserId == currentUserId.Value)
+        )).ToList();
+    }
 }
