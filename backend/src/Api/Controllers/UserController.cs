@@ -66,7 +66,15 @@ public class UserController : ControllerBase
     {
         try
         {
-            var profile = await _userService.GetByUsernameAsync(username);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Guid? currentUserId = null;
+            
+            if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userGuid))
+            {
+                currentUserId = userGuid;
+            }
+
+            var profile = await _userService.GetByUsernameAsync(username, currentUserId);
 
             if (profile == null)
             {
@@ -99,6 +107,62 @@ public class UserController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error searching users with query {Query}", q);
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpPost("{id}/follow")]
+    public async Task<IActionResult> Follow(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var followerGuid))
+            {
+                return Unauthorized(new { error = "User not authenticated." });
+            }
+
+            await _userService.FollowAsync(followerGuid, id);
+            return Ok(new { message = "Successfully followed user." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error following user {UserId}", id);
+            return StatusCode(500, new { error = "An unexpected error occurred." });
+        }
+    }
+
+    [HttpDelete("{id}/follow")]
+    public async Task<IActionResult> Unfollow(Guid id)
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var followerGuid))
+            {
+                return Unauthorized(new { error = "User not authenticated." });
+            }
+
+            await _userService.UnfollowAsync(followerGuid, id);
+            return Ok(new { message = "Successfully unfollowed user." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unfollowing user {UserId}", id);
             return StatusCode(500, new { error = "An unexpected error occurred." });
         }
     }

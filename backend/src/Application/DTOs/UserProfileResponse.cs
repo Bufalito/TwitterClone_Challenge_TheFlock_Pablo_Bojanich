@@ -10,5 +10,6 @@ public record UserProfileResponse(
     int FollowersCount,
     int FollowingCount,
     int TweetsCount,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    bool IsFollowedByCurrentUser
 );

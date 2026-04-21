@@ -88,7 +88,7 @@ public sealed class UserService : IUserService
         property?.SetValue(user, avatar);
     }
 
-    public async Task<UserProfileResponse?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    public async Task<UserProfileResponse?> GetByUsernameAsync(string username, Guid? currentUserId = null, CancellationToken cancellationToken = default)
     {
         var user = await _context.Set<User>()
             .Include(u => u.Followers)
@@ -101,6 +101,8 @@ public sealed class UserService : IUserService
             return null;
         }
 
+        var isFollowed = currentUserId.HasValue && user.Followers.Any(f => f.FollowerId == currentUserId.Value);
+
         return new UserProfileResponse(
             user.Id,
             user.Username,
@@ -111,7 +113,8 @@ public sealed class UserService : IUserService
             user.Followers.Count,
             user.Following.Count,
             user.Tweets.Count,
-            user.CreatedAtUtc
+            user.CreatedAtUtc,
+            isFollowed
         );
     }
 
@@ -135,5 +138,53 @@ public sealed class UserService : IUserService
             u.Avatar,
             u.Followers.Count
         )).ToList();
+    }
+
+    public async Task FollowAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default)
+    {
+        // Check if users exist
+        var followerExists = await _context.Set<User>()
+            .AnyAsync(u => u.Id == followerId, cancellationToken);
+        
+        if (!followerExists)
+        {
+            throw new InvalidOperationException("Follower user not found.");
+        }
+
+        var followedExists = await _context.Set<User>()
+            .AnyAsync(u => u.Id == followedId, cancellationToken);
+        
+        if (!followedExists)
+        {
+            throw new InvalidOperationException("User to follow not found.");
+        }
+
+        // Check if already following
+        var alreadyFollowing = await _context.Set<Follow>()
+            .AnyAsync(f => f.FollowerId == followerId && f.FollowedId == followedId, cancellationToken);
+
+        if (alreadyFollowing)
+        {
+            throw new InvalidOperationException("Already following this user.");
+        }
+
+        // Create follow relationship
+        var follow = new Follow(followerId, followedId);
+        _context.Set<Follow>().Add(follow);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UnfollowAsync(Guid followerId, Guid followedId, CancellationToken cancellationToken = default)
+    {
+        var follow = await _context.Set<Follow>()
+            .FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FollowedId == followedId, cancellationToken);
+
+        if (follow == null)
+        {
+            throw new InvalidOperationException("Not following this user.");
+        }
+
+        _context.Set<Follow>().Remove(follow);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -32,6 +32,7 @@ export interface UserProfile {
   followingCount?: number;
   tweetsCount?: number;
   createdAtUtc: string;
+  isFollowedByCurrentUser: boolean;
 }
 
 export interface UserSearchResult {
@@ -113,11 +114,29 @@ export const api = {
         },
       }),
 
-    getByUsername: (username: string) =>
-      fetchApi<UserProfile>(`/api/user/${username}`),
+    getByUsername: (username: string, token?: string) =>
+      fetchApi<UserProfile>(`/api/user/${username}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }),
 
     search: (query: string) =>
       fetchApi<UserSearchResult[]>(`/api/user/search?q=${encodeURIComponent(query)}`),
+
+    follow: (token: string, userId: string) =>
+      fetchApi<{ message: string }>(`/api/user/${userId}/follow`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+
+    unfollow: (token: string, userId: string) =>
+      fetchApi<{ message: string }>(`/api/user/${userId}/follow`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
   },
 
   tweets: {
